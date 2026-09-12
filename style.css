@@ -678,7 +678,8 @@ button:focus-visible {
   animation: fadeIn 250ms ease;
 }
 
-.error-banner.banner-hidden {
+.error-banner.banner-hidden,
+.error-banner[hidden] {
   display: none !important;
 }
 

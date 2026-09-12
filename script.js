@@ -358,7 +358,7 @@ function selectCategory(categoryKey) {
   // Show "Quay 🎲" button, hide result panel
   showInitialSpinButton();
   hideResultPanel();
-  hideErrorMessage();
+  hideSubmitError();
 
   // Switch to Screen 2 smoothly (NO AUTO SPIN)
   switchScreen("screen-roulette");
@@ -465,7 +465,7 @@ function spinRoulette() {
   // Hide initial start button and result panel during spin
   hideInitialSpinButton();
   hideResultPanel();
-  hideErrorMessage();
+  hideSubmitError();
 
   const statusText = document.getElementById("roulette-status-text");
   if (statusText) {
@@ -648,7 +648,7 @@ function resetApp() {
   appState.hasSpunOnce = false;
 
   hideResultPanel();
-  hideErrorMessage();
+  hideSubmitError();
   hideSuccessModal();
   showInitialSpinButton();
 
@@ -663,76 +663,115 @@ function resetApp() {
 }
 
 // ============================================================================
-// 8. FORMSPREE INTEGRATION (Section 8)
+// 8. FORMSPREE INTEGRATION (Section 8 & FIX.md)
 // ============================================================================
 
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/mzebwlkr";
+
+function getCategoryLabel(categoryKey) {
+  const cat = CATEGORIES.find((c) => c.key === categoryKey);
+  return cat ? cat.label : categoryKey;
+}
 
 async function submitResult(payload) {
   const response = await fetch(FORMSPREE_ENDPOINT, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Accept": "application/json"
+      "Accept": "application/json" // BẮT BUỘC, thiếu dòng này Formspree có thể trả HTML thay vì JSON
     },
     body: JSON.stringify(payload)
   });
 
-  if (!response.ok) {
-    throw new Error("Submit failed with status " + response.status);
+  let data = null;
+  try {
+    data = await response.json();
+  } catch (parseErr) {
+    // Formspree đôi khi trả về không phải JSON hợp lệ (vd HTML lỗi) -> coi là lỗi
+    throw new Error("Phản hồi từ Formspree không hợp lệ.");
   }
 
-  return response.json();
+  if (!response.ok || (data && Array.isArray(data.errors) && data.errors.length > 0)) {
+    const errorMessage =
+      data && Array.isArray(data.errors) && data.errors.length > 0
+        ? data.errors.map((e) => e.message).join("; ")
+        : `Formspree trả về lỗi với status ${response.status}`;
+    throw new Error(errorMessage);
+  }
+
+  return data;
 }
 
 async function handleFinalSubmit() {
-  if (appState.isSubmitting || !appState.selectedFood || !appState.selectedCategory) return;
+  if (appState.isSubmitting) return; // chống double click / double submit
+  if (!appState.selectedCategory || !appState.selectedFood) return; // guard: chưa có kết quả thì không cho submit
 
-  const submitBtn = document.getElementById("btn-submit");
-  const rerollBtn = document.getElementById("btn-reroll");
-  const catObj = CATEGORIES.find(c => c.key === appState.selectedCategory);
-  const categoryLabel = catObj ? catObj.label : appState.selectedCategory;
+  appState.isSubmitting = true;
+  hideSubmitError();
+  setSubmitButtonState({ loading: true });
 
   const payload = {
-    category: categoryLabel,
+    category: getCategoryLabel(appState.selectedCategory), // label hiển thị, không phải key nội bộ
     food: appState.selectedFood.name,
     timestamp: new Date().toISOString()
   };
 
-  appState.isSubmitting = true;
-  hideErrorMessage();
-
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span aria-hidden="true">💕</span> Đang ghi nhận... 💕';
-  }
-  if (rerollBtn) {
-    rerollBtn.disabled = true;
-  }
-
   try {
     await submitResult(payload);
-    showSuccessModal(appState.selectedFood.name);
+    showSuccessModal();
   } catch (err) {
-    console.error("Submission error:", err);
-    showErrorMessage();
+    console.error("[Formspree submit error]", err); // log để debug, không hiển thị raw error cho user
+    showSubmitError();
   } finally {
     appState.isSubmitting = false;
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = '<span aria-hidden="true">🥰</span> Chốt món này! 🥰';
-    }
-    if (rerollBtn) {
-      rerollBtn.disabled = false;
+    setSubmitButtonState({ loading: false });
+  }
+}
+
+function setSubmitButtonState({ loading }) {
+  const btn = document.getElementById("btn-confirm-food") || document.getElementById("btn-submit");
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.textContent = loading ? "Đang ghi nhận... 💕" : "Chốt món này! 🥰";
+
+  const rerollBtn = document.getElementById("btn-reroll");
+  if (rerollBtn) {
+    rerollBtn.disabled = loading;
+  }
+}
+
+function showSubmitError() {
+  // Hiện UI lỗi thân thiện + nút retry, KHÔNG reset selectedFood, KHÔNG quay lại roulette
+  const errorBox = document.getElementById("submit-error-box") || document.getElementById("submit-error-banner");
+  if (errorBox) {
+    errorBox.hidden = false;
+    errorBox.classList.remove("banner-hidden");
+    const errorMsg = document.getElementById("submit-error-message") || errorBox.querySelector(".error-text");
+    if (errorMsg) {
+      errorMsg.textContent = "Oops! Hình như kết nối đang có chút vấn đề 🥺 Thử lại một lần nữa nha!";
     }
   }
+}
+
+function hideSubmitError() {
+  const errorBox = document.getElementById("submit-error-box") || document.getElementById("submit-error-banner");
+  if (errorBox) {
+    errorBox.hidden = true;
+    errorBox.classList.add("banner-hidden");
+  }
+}
+
+function retrySubmit() {
+  hideSubmitError();
+  handleFinalSubmit(); // gọi lại với đúng payload hiện tại (selectedFood chưa bị mất)
 }
 
 function showSuccessModal(foodName) {
   const modal = document.getElementById("modal-success");
   const recap = document.getElementById("modal-food-recap");
   
-  if (recap) recap.textContent = foodName;
+  const nameToDisplay = foodName || (appState.selectedFood ? appState.selectedFood.name : "");
+  if (recap) recap.textContent = nameToDisplay;
   if (modal) {
     modal.classList.remove("modal-hidden");
   }
@@ -742,20 +781,6 @@ function hideSuccessModal() {
   const modal = document.getElementById("modal-success");
   if (modal) {
     modal.classList.add("modal-hidden");
-  }
-}
-
-function showErrorMessage() {
-  const banner = document.getElementById("submit-error-banner");
-  if (banner) {
-    banner.classList.remove("banner-hidden");
-  }
-}
-
-function hideErrorMessage() {
-  const banner = document.getElementById("submit-error-banner");
-  if (banner) {
-    banner.classList.add("banner-hidden");
   }
 }
 
@@ -896,16 +921,16 @@ function initApp() {
     rerollBtn.addEventListener("click", handleReroll);
   }
 
-  // Submit button
-  const submitBtn = document.getElementById("btn-submit");
-  if (submitBtn) {
-    submitBtn.addEventListener("click", handleFinalSubmit);
+  // Submit / Confirm button
+  const confirmBtn = document.getElementById("btn-confirm-food") || document.getElementById("btn-submit");
+  if (confirmBtn) {
+    confirmBtn.addEventListener("click", handleFinalSubmit);
   }
 
   // Retry button
-  const retryBtn = document.getElementById("btn-retry");
+  const retryBtn = document.getElementById("btn-retry-submit") || document.getElementById("btn-retry");
   if (retryBtn) {
-    retryBtn.addEventListener("click", handleFinalSubmit);
+    retryBtn.addEventListener("click", retrySubmit);
   }
 
   // Home button in Modal

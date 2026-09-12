@@ -99,19 +99,19 @@
             <h3 id="result-food-name" class="result-food-title">Tên món ăn</h3>
             
             <div class="result-actions">
-              <button id="btn-reroll" class="btn btn-secondary">
+              <button id="btn-reroll" class="btn btn-secondary" type="button">
                 <span aria-hidden="true">🥺</span> Quay lại đi 🥺
               </button>
-              <button id="btn-submit" class="btn btn-primary">
+              <button id="btn-confirm-food" class="btn btn-primary" type="button">
                 <span aria-hidden="true">🥰</span> Chốt món này! 🥰
               </button>
             </div>
 
-            <!-- Error Banner with Retry -->
-            <div id="submit-error-banner" class="error-banner banner-hidden" role="alert">
+            <!-- Error Banner with Retry (FIX.md) -->
+            <div id="submit-error-box" class="error-banner banner-hidden" role="alert" hidden>
               <span class="error-icon" aria-hidden="true">⚠️</span>
-              <span class="error-text">Oops! Hình như kết nối đang có chút vấn đề 🥺 Thử lại một lần nữa nha!</span>
-              <button id="btn-retry" class="btn btn-retry">Thử lại 🔄</button>
+              <span id="submit-error-message" class="error-text">Oops! Hình như kết nối đang có chút vấn đề 🥺 Thử lại một lần nữa nha!</span>
+              <button id="btn-retry-submit" class="btn btn-retry" type="button">Thử lại 🔁</button>
             </div>
           </div>
         </div>
