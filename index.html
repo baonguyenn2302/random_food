@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Random Food 💕 — Hôm nay công chúa ăn gì?</title>
+  <meta name="description" content="Vòng quay ẩm thực ngẫu nhiên dễ thương, coquette pastel dành riêng cho công chúa. Không còn lo lắng hôm nay ăn gì!">
+  <meta name="theme-color" content="#fdf6f0">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Canvas Confetti -->
+  <canvas id="confetti-canvas" aria-hidden="true"></canvas>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="site-header">
+      <div class="brand">
+        <span class="brand-heart" aria-hidden="true">🎀</span>
+        <span class="brand-title">Random Food 💕</span>
+      </div>
+      
+      <div class="header-actions">
+        <button id="theme-toggle" class="theme-toggle-btn" aria-label="Chuyển giao diện sáng/tối" title="Đổi giao diện">
+          <span class="theme-icon" id="theme-icon" aria-hidden="true">🌙</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- SCREEN 1: Category Selection -->
+      <section id="screen-category" class="screen screen-active" aria-labelledby="category-heading">
+        <div class="hero-section">
+          <div class="badge-tag">✨ Menu dành riêng cho nàng ✨</div>
+          <h1 id="category-heading" class="hero-title">Hôm nay công chúa ăn gì? 👑</h1>
+          <p class="hero-subtitle">Chọn một thể loại nàng đang thèm nhất, phần còn lại để vòng quay định mệnh quyết định nha!</p>
+        </div>
+
+        <div id="category-grid" class="category-grid" role="group" aria-label="Danh sách thể loại món ăn">
+          <!-- Populated by JavaScript -->
+        </div>
+      </section>
+
+      <!-- SCREEN 2: Roulette View -->
+      <section id="screen-roulette" class="screen screen-hidden" aria-labelledby="roulette-heading" aria-hidden="true">
+        <div class="roulette-top-bar">
+          <button id="btn-back" class="btn btn-ghost" aria-label="Quay lại chọn thể loại">
+            <span aria-hidden="true">←</span> Đổi thể loại khác
+          </button>
+          <div id="current-category-badge" class="current-category-pill">
+            <span id="current-category-emoji" aria-hidden="true">🍜</span>
+            <span id="current-category-name">Bún nước</span>
+          </div>
+        </div>
+
+        <div class="roulette-intro">
+          <h2 id="roulette-heading" class="roulette-title">Vòng quay ẩm thực may mắn 🎡</h2>
+          <p id="roulette-status-text" class="roulette-subtitle">Bấm nút "Quay 🎲" để vòng quay bắt đầu nha!</p>
+        </div>
+
+        <!-- Roulette Box -->
+        <div class="roulette-wrapper">
+          <div class="roulette-viewport" id="roulette-viewport" aria-live="polite">
+            <!-- Center Marker -->
+            <div class="roulette-marker" aria-hidden="true">
+              <span class="marker-pointer marker-top">💖</span>
+              <div class="marker-line"></div>
+              <span class="marker-pointer marker-bottom">🎀</span>
+            </div>
+
+            <!-- Horizontal Track -->
+            <div class="roulette-track" id="roulette-track">
+              <!-- Populated with items (stationary initially) -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Start Spin Control (Section 7.9a: Default state of Screen 2, NO auto-spin) -->
+        <div id="initial-spin-container" class="initial-spin-container">
+          <button id="btn-spin-start" class="btn btn-primary btn-spin-start" aria-label="Bắt đầu quay">
+            <span aria-hidden="true">🎲</span> Quay 🎲
+          </button>
+        </div>
+
+        <!-- Result Section (Section 7.9b: Shown only after spin stops) -->
+        <div id="result-panel" class="result-panel panel-hidden" aria-live="assertive">
+          <div class="result-card">
+            <div class="result-sparkle">✨ 🍽️ ✨</div>
+            <div class="result-sub">Vũ trụ đã chọn cho công chúa món:</div>
+            <h3 id="result-food-name" class="result-food-title">Tên món ăn</h3>
+            
+            <div class="result-actions">
+              <button id="btn-reroll" class="btn btn-secondary">
+                <span aria-hidden="true">🥺</span> Quay lại đi 🥺
+              </button>
+              <button id="btn-submit" class="btn btn-primary">
+                <span aria-hidden="true">🥰</span> Chốt món này! 🥰
+              </button>
+            </div>
+
+            <!-- Error Banner with Retry -->
+            <div id="submit-error-banner" class="error-banner banner-hidden" role="alert">
+              <span class="error-icon" aria-hidden="true">⚠️</span>
+              <span class="error-text">Oops! Hình như kết nối đang có chút vấn đề 🥺 Thử lại một lần nữa nha!</span>
+              <button id="btn-retry" class="btn btn-retry">Thử lại 🔄</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+      <p>Made with love for công chúa 💕 • 100% Static & Girly Aesthetic</p>
+    </footer>
+  </div>
+
+  <!-- Success Modal -->
+  <div id="modal-success" class="modal-overlay modal-hidden" role="dialog" aria-modal="true" aria-labelledby="modal-success-title">
+    <div class="modal-card">
+      <div class="modal-icon" aria-hidden="true">🎉</div>
+      <h3 id="modal-success-title" class="modal-title">Ghi nhận thành công!</h3>
+      <p class="modal-message">Lựa chọn đã được ghi nhận! Chúc nàng ăn ngon miệng nha! 💖</p>
+      <div class="modal-summary">
+        <span class="summary-label">Món đã chốt:</span>
+        <span id="modal-food-recap" class="summary-value">Bún bò Huế</span>
+      </div>
+      <button id="btn-home" class="btn btn-primary btn-modal-home">Về trang chủ 🏠</button>
+    </div>
+  </div>
+
+  <!-- Script -->
+  <script src="script.js"></script>
+</body>
+</html>
